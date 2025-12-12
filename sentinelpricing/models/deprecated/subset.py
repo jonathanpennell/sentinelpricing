@@ -24,28 +24,44 @@ class Subset(tuple):
         return iter(self._fields)
 
     def __repr__(self):
-        return "(" + ",".join([f"{k}={getattr(self, k)}" for k in self._fields]) + ")"
+        return (
+            "("
+            + ",".join([f"{k}={getattr(self, k)}" for k in self._fields])
+            + ")"
+        )
 
     def __getitem__(self, key):
         return getattr(self, key)
 
     def __lt__(self, other):
-        if all(getattr(self, field) < getattr(other, field) for field in self._fields):
+        if all(
+            getattr(self, field) < getattr(other, field)
+            for field in self._fields
+        ):
             return True
         return False
 
     def __le__(self, other):
-        if all(getattr(self, field) <= getattr(other, field) for field in self._fields):
+        if all(
+            getattr(self, field) <= getattr(other, field)
+            for field in self._fields
+        ):
             return True
         return False
 
     def __gt__(self, other):
-        if all(getattr(self, field) > getattr(other, field) for field in self._fields):
+        if all(
+            getattr(self, field) > getattr(other, field)
+            for field in self._fields
+        ):
             return True
         return False
 
     def __ge__(self, other):
-        if all(getattr(self, field) >= getattr(other, field) for field in self._fields):
+        if all(
+            getattr(self, field) >= getattr(other, field)
+            for field in self._fields
+        ):
             return True
         return False
 
@@ -57,7 +73,10 @@ class Subset(tuple):
 
         if set(self._fields) != set(other._fields):
             return False
-        if all(getattr(self, field) == getattr(other, field) for field in self._fields):
+        if all(
+            getattr(self, field) == getattr(other, field)
+            for field in self._fields
+        ):
             return True
         return False
 
@@ -75,7 +94,8 @@ class Subset(tuple):
     def __contains__(self, other):
         if len(other._fields) >= len(self._fields):
             if any(
-                getattr(self, field) == getattr(other, field) for field in other._fields
+                getattr(self, field) == getattr(other, field)
+                for field in other._fields
             ):
                 return True
         return False

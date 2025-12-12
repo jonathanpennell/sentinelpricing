@@ -194,7 +194,10 @@ class Framework(abc.ABC):
         """
         instance = cls()
         quote_set = QuoteSet(
-            [instance._calculate_wrapper(test, *args, **kwargs) for test in tests],
+            [
+                instance._calculate_wrapper(test, *args, **kwargs)
+                for test in tests
+            ],
             framework=cls,
         )
 

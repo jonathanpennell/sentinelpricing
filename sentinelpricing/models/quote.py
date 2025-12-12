@@ -65,7 +65,9 @@ class Quote:
         elif isinstance(testcase, dict):
             self.quotedata = testcase
         else:
-            raise TypeError("testcase must be a Mapping or a TestCase instance.")
+            raise TypeError(
+                "testcase must be a Mapping or a TestCase instance."
+            )
 
         self.breakdown = (
             Breakdown(final_price) if final_price is not None else Breakdown()
@@ -317,7 +319,9 @@ class Quote:
     def __contains__(self, key):
         return key in self.quotedata
 
-    def _operation(self, other: Any, oper: Callable[[Any, Any], Any]) -> "Quote":
+    def _operation(
+        self, other: Any, oper: Callable[[Any, Any], Any]
+    ) -> "Quote":
         """
         Apply an arithmetic operation to the quote's final price.
 

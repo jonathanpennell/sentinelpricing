@@ -140,7 +140,8 @@ class TestSuite:
         print(grouped)
         if percent:
             mix = {
-                k: percentage(len(v), len(self), **kwargs) for k, v in grouped.items()
+                k: percentage(len(v), len(self), **kwargs)
+                for k, v in grouped.items()
             }
         else:
             mix = {k: len(v) for k, v in grouped.items()}
@@ -159,7 +160,9 @@ class TestSuite:
         dicts.
         """
         if not isinstance(other, TestSuite):
-            raise NotImplementedError("Difference only implemented for QuoteSet")
+            raise NotImplementedError(
+                "Difference only implemented for QuoteSet"
+            )
         return dict_difference(
             self.mix(by=by, percent=percent),
             other.mix(by=by, percent=percent),

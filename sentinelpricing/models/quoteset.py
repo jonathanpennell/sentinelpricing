@@ -93,7 +93,11 @@ class QuoteSet:
         other_identifiers = {q.identifier for q in other.quotes}
 
         return QuoteSet(
-            list(filter(lambda q: q.identifier in other_identifiers, self.quotes))
+            list(
+                filter(
+                    lambda q: q.identifier in other_identifiers, self.quotes
+                )
+            )
         )
 
     def __contains__(self, other):
@@ -168,7 +172,9 @@ class QuoteSet:
         """
         attribute: str = on or "final_price"
 
-        filtered_quotes = list(filter(where, self.quotes)) if where else self.quotes
+        filtered_quotes = (
+            list(filter(where, self.quotes)) if where else self.quotes
+        )
 
         if by is None:
             values = [getattr(q, attribute) for q in filtered_quotes]
@@ -321,7 +327,8 @@ class QuoteSet:
         grouped = self._groupby(by=by)
         if percent:
             return {
-                k: percentage(len(v), len(self), **kwargs) for k, v in grouped.items()
+                k: percentage(len(v), len(self), **kwargs)
+                for k, v in grouped.items()
             }
         return {k: len(v) for k, v in grouped.items()}
 
@@ -348,7 +355,9 @@ class QuoteSet:
             NotImplementedError: If `other` is not a QuoteSet.
         """
         if not isinstance(other, QuoteSet):
-            raise NotImplementedError("Difference only implemented for QuoteSet")
+            raise NotImplementedError(
+                "Difference only implemented for QuoteSet"
+            )
         return dict_difference(
             self.mix(by=by, percent=percent), other.mix(by=by, percent=percent)
         )
@@ -377,8 +386,12 @@ class QuoteSet:
             NotImplementedError: If `other` is not a QuoteSet.
         """
         if not isinstance(other, QuoteSet):
-            raise NotImplementedError("Difference only implemented for QuoteSet")
-        return dict_difference(self.apply(func, by=by), other.apply(func, by=by))
+            raise NotImplementedError(
+                "Difference only implemented for QuoteSet"
+            )
+        return dict_difference(
+            self.apply(func, by=by), other.apply(func, by=by)
+        )
 
     def factors(self, keys: Optional[Iterable[str]] = None) -> Dict[str, set]:
         """

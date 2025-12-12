@@ -14,7 +14,10 @@ class Step:
 
     @classmethod
     def headers(cls):
-        return f"{'Total': <8} :: {"Name":<72}" + f" - {"Operation": <30} - {"Other"}"
+        return (
+            f"{'Total': <8} :: {"Name":<72}"
+            + f" - {"Operation": <30} - {"Other"}"
+        )
 
     def __repr__(self):
         return (

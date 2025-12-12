@@ -118,7 +118,9 @@ class LookupTable:
         self.name: Optional[str] = name
 
         # Ensure the lookup table is sorted by index.
-        combined = sorted(zip(self.index, self.rates), key=lambda pair: pair[0])
+        combined = sorted(
+            zip(self.index, self.rates), key=lambda pair: pair[0]
+        )
         self.index, self.rates = map(list, zip(*combined))
 
         if cache:
