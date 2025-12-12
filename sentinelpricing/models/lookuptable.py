@@ -146,7 +146,6 @@ class LookupTable:
             key = (key,)
         return self.lookup(*key)
 
-
     def lookup(self, *keys: Any) -> "Rate":
         """
         Retrieve a rate value from the lookup table based on the provided keys.

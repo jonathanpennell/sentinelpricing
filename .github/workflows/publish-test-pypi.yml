@@ -37,7 +37,7 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     environment: test
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/testpypiupload'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3

@@ -6,6 +6,7 @@ from pathlib import Path
 from abc import ABC
 from typing import IO
 
+
 class DataFile(ABC):
     """
     Context manager for opening a resource file from a package.
@@ -19,7 +20,8 @@ class DataFile(ABC):
     where the file is stored.
 
     Attributes:
-        path: Path to the data file in your module '{your_module_name}/data/file.csv'
+        path: Path to the data file in your module
+            '{your_module_name}/data/file.csv'
         mode: The file mode ("t" for text or "b" for binary).
     """
 
@@ -32,7 +34,8 @@ class DataFile(ABC):
         Initialize the ModuleFile context manager.
 
         Args:
-            path: Path to the data file in your module '{your_module_name}/data/file.csv'
+            path: Path to the data file in your module
+                '{your_module_name}/data/file.csv'
             mode: The file mode ("t" for text or "b" for binary).
 
         """
@@ -52,7 +55,11 @@ class DataFile(ABC):
         package_name = self.path.parts[0]
         filepath = Path(*self.path.parts[1:])
         if self.mode == "t":
-            self._file = importlib.resources.open_text(package_name, filepath, encoding="utf-8")
+            self._file = importlib.resources.open_text(
+                package_name,
+                filepath,
+                encoding="utf-8"
+            )
 
         if self.mode == "b":
             return importlib.resources.open_binary(package_name, filepath)
@@ -73,4 +80,3 @@ class DataFile(ABC):
         """
         if self._file is not None:
             self._file.close()
-

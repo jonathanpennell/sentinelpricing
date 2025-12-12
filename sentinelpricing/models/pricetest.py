@@ -54,7 +54,6 @@ class PriceTest:
         return self.apply(quote)
 
     def apply(self, quote):
-        by = self.by
 
         val = self.get(quote)
         bucket = self.bin(quote)
@@ -82,7 +81,7 @@ class PriceTest:
 
     def get_bin_function(self):
         buckets = len(self.buckets)
-        by = self.by
+
         def bin_func(q):
             val = self.get(q)
             bucket = hash(val) % buckets

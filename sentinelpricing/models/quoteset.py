@@ -11,6 +11,7 @@ from typing import (
     List,
     Optional,
     Union,
+    Tuple,
 )
 
 from .quote import Quote
@@ -124,7 +125,7 @@ class QuoteSet:
                 objects.
         """
 
-        _by: Union[Tuple[Any,...], Callable, str]
+        _by: Union[Tuple[Any, ...], Callable, str]
         if callable(by):
             _by = by
         elif isinstance(by, Iterable) and not isinstance(by, (str)):
