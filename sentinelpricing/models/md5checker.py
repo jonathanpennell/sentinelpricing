@@ -1,45 +1,26 @@
 import hashlib
 
 
-# Python program to find MD5 hash value of a file
-class MD5Checker:
+class MD5Hash:
+    md5 = None
+    filename = None
 
-    def __init__(self, file):
-        self.file = file
-        self.md5 = None
+    def __init__(self, file, chunking=False):
 
-        if not self.file.closed:
-            self.set_md5()
+        _md5 = hashlib.md5()
+
+        if chunking:
+
+            while byte_block := file.read(4096):
+                _md5.update(byte_block)
         else:
-            raise ValueError("File Closed.")
+            _md5.update(file.read())
 
-        if self.md5 is None:
-            raise RuntimeError()
+        self.md5 = _md5.hexdigest()
 
     def __eq__(self, other):
-        print(self.md5.hexdigest())
-        return self.md5.hexdigest() == other
-
-    def __ne__(self, other):
-        return self.md5.digest() != other
-
-    @classmethod
-    def from_file(self, file):
-        ...
-
-    @classmethod
-    def from_filepath(self, file):
-        ...    
-
-    def set_md5(self):
-        
-        if self.md5 is not None:
-            raise AttributeError("Unable to write over md5.")
-
-        md5_hash = hashlib.md5()
-
-        # Read and update hash in chunks of 4K
-        for byte_block in iter(lambda: self.file.read(4096), b""):
-            md5_hash.update(byte_block)
-
-        self.md5 = md5_hash
+        if isinstance(other, MD5Hash):
+            return self.md5 == other.md5
+        elif isinstance(other, str):
+            return self.md5 == other
+        return NotImplemented
