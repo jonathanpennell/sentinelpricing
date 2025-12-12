@@ -25,9 +25,7 @@ class TestCase:
 
     def __getitem__(self, key):
         if self.data is None:
-            raise ValueError(
-                "Quote has not been run against a framework/testcase yet."
-            )
+            raise ValueError("Quote has not been run against a framework/testcase yet.")
 
         return self.data[key]
 
@@ -36,9 +34,7 @@ class TestCase:
 
     def quote(self, framework, *args, **kwargs):
         if not isinstance(framework, type):
-            raise ValueError(
-                "Framework Instance received, expected definition."
-            )
+            raise ValueError("Framework Instance received, expected definition.")
         quote = framework.quote(self, *args, **kwargs)
         self.quotes.append(quote)
         return quote

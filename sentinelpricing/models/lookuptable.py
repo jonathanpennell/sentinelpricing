@@ -53,7 +53,7 @@ class LookupTable:
         data: List[Dict[str, Any]],
         rate_column: Optional[str] = None,
         name: Optional[str] = None,
-        cache: bool = True
+        cache: bool = True,
     ) -> None:
         """
         Initialize a new instance of LookupTable.
@@ -76,9 +76,7 @@ class LookupTable:
         # Process each row in the input data.
         for row in data:
             if rate_column not in row:
-                raise KeyError(
-                    f"Invalid or missing rate key in row: {row}"
-                )
+                raise KeyError(f"Invalid or missing rate key in row: {row}")
             rates.append(float(row[rate_column]))
 
             # Process index values: if a value is a numeric string,
@@ -120,9 +118,7 @@ class LookupTable:
         self.name: Optional[str] = name
 
         # Ensure the lookup table is sorted by index.
-        combined = sorted(
-            zip(self.index, self.rates), key=lambda pair: pair[0]
-        )
+        combined = sorted(zip(self.index, self.rates), key=lambda pair: pair[0])
         self.index, self.rates = map(list, zip(*combined))
 
         if cache:

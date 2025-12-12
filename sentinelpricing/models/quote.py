@@ -65,9 +65,7 @@ class Quote:
         elif isinstance(testcase, dict):
             self.quotedata = testcase
         else:
-            raise TypeError(
-                "testcase must be a Mapping or a TestCase instance."
-            )
+            raise TypeError("testcase must be a Mapping or a TestCase instance.")
 
         self.breakdown = (
             Breakdown(final_price) if final_price is not None else Breakdown()
@@ -82,9 +80,7 @@ class Quote:
             str: A string representation of the quote.
         """
         return "{}::{}::{}".format(
-            self.__class__.__name__,
-            self.identifier,
-            repr(self.framework)
+            self.__class__.__name__, self.identifier, repr(self.framework)
         )
 
     def __getitem__(self, key: Hashable) -> Any:
@@ -321,9 +317,7 @@ class Quote:
     def __contains__(self, key):
         return key in self.quotedata
 
-    def _operation(
-        self, other: Any, oper: Callable[[Any, Any], Any]
-    ) -> "Quote":
+    def _operation(self, other: Any, oper: Callable[[Any, Any], Any]) -> "Quote":
         """
         Apply an arithmetic operation to the quote's final price.
 
@@ -367,10 +361,7 @@ class Quote:
     def override(self, /, final_price, message=None):
 
         overriding_step = Step(
-            f"OVERRIDE - {message}",
-            "assignment",
-            final_price,
-            final_price
+            f"OVERRIDE - {message}", "assignment", final_price, final_price
         )
         self.breakdown.append(overriding_step)
 

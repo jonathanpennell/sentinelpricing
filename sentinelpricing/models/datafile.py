@@ -1,4 +1,3 @@
-
 import importlib.resources
 
 from pathlib import Path
@@ -25,11 +24,7 @@ class DataFile(ABC):
         mode: The file mode ("t" for text or "b" for binary).
     """
 
-    def __init__(
-        self,
-        path: str,
-        mode: str = "t"
-    ) -> None:
+    def __init__(self, path: str, mode: str = "t") -> None:
         """
         Initialize the ModuleFile context manager.
 
@@ -56,16 +51,14 @@ class DataFile(ABC):
         filepath = Path(*self.path.parts[1:])
         if self.mode == "t":
             self._file = importlib.resources.open_text(
-                package_name,
-                filepath,
-                encoding="utf-8"
+                package_name, filepath, encoding="utf-8"
             )
 
         if self.mode == "b":
             return importlib.resources.open_binary(package_name, filepath)
 
         if self._file is None:
-            raise FileNotFoundError('Either Module or Path is incorrect')
+            raise FileNotFoundError("Either Module or Path is incorrect")
 
         return self._file
 
