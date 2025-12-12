@@ -1,9 +1,38 @@
 from bisect import bisect_left
-from collections import namedtuple
+from collections import namedtuple, Counter, defaultdict
 from functools import lru_cache
 from typing import List, Dict, Any, Optional, Tuple, Union
 
 from .rate import Rate
+
+
+class Cache:
+
+    def __init__(self, maxsize: int = 128) -> None:
+        self._cache = {}
+        self._hits = {}
+        self.maxsize = maxsize
+
+    def __getitem__(self, key):
+        self._hits[key] += 1
+        return self._cache[key]
+
+    def __setitem__(self, key, value):
+        if key in self._cache:
+            self._cache[key] = value
+            return
+
+        if len(self._cache) == self.maxsize:
+            i = 0
+            lru_keys = sorted(self._hits.items(), key=lambda x: x[1])[
+                : self.maxsize // 2
+            ]
+            for k, v in lru_keys:
+                self._cache.pop(k)
+                self._hits.pop(k)
+
+        self._cache[key] = value
+        self._hits[key] = 1
 
 
 class LookupTable:
@@ -124,7 +153,9 @@ class LookupTable:
         self.index, self.rates = map(list, zip(*combined))
 
         if cache:
-            self.lookup = lru_cache(self.lookup)
+            self.cache = Cache()
+        else:
+            self.cache = None
 
     def __len__(self):
         return len(self.index)
@@ -142,6 +173,7 @@ class LookupTable:
         """
         if not isinstance(key, tuple):
             key = (key,)
+
         return self.lookup(*key)
 
     def lookup(self, *keys: Any) -> "Rate":
@@ -164,18 +196,29 @@ class LookupTable:
         if not self.index or len(keys) != len(self.index[0]):
             raise KeyError("Incompatible number of keys provided.")
 
+        if keys in self.cache:
+            return Rate(
+                self.name or "Unnamed Rate", self.rates[self.cache[keys]]
+            )
+
         # Create an index key using the namedtuple type.
         search_key = self.index_type(*keys)
+
         idx = bisect_left(self.index, search_key)
 
         # Determine the appropriate rate value.
+        if idx == 0:
+            pass
         if idx < len(self.index) and self.index[idx] == search_key:
-            rate_value = self.rates[idx]
-        elif idx == 0:
-            rate_value = self.rates[0]
+            pass
         elif idx < len(self.index) and self.index[idx] > search_key:
-            rate_value = self.rates[idx - 1]
+            idx = idx - 1
         else:
-            rate_value = self.rates[-1]
+            idx = idx - 1
+
+        rate_value = self.rates[idx]
+
+        if self.cache:
+            self.cache[keys] = idx
 
         return Rate(self.name or "Unnamed Rate", rate_value)
