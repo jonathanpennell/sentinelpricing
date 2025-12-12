@@ -1,10 +1,10 @@
-from .md5checker import MD5Checker
+
 import importlib.resources
 
 from pathlib import Path
 
-from abc import ABC, abstractmethod
-from typing import IO, Any, Optional, Union
+from abc import ABC
+from typing import IO
 
 class DataFile(ABC):
     """
@@ -19,8 +19,7 @@ class DataFile(ABC):
     where the file is stored.
 
     Attributes:
-        package: The package that contains the resource.
-        name: The name of the resource file.
+        path: Path to the data file in your module '{your_module_name}/data/file.csv'
         mode: The file mode ("t" for text or "b" for binary).
     """
 
