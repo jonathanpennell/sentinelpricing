@@ -1,14 +1,12 @@
-
-import hashlib
+from .md5checker import MD5Checker
 import importlib.resources
-import os
+
+from pathlib import Path
 
 from abc import ABC, abstractmethod
-from functools import partialmethod
-from typing import IO, Any, Optional
+from typing import IO, Any, Optional, Union
 
-
-class ModuleFile(ABC):
+class DataFile(ABC):
     """
     Context manager for opening a resource file from a package.
 
@@ -28,30 +26,19 @@ class ModuleFile(ABC):
 
     def __init__(
         self,
-        package: Any,
-        name: str,
-        mode: str = "text",
-        expected_md5: str = None
-        ) -> None:
+        path: str,
+        mode: str = "t"
+    ) -> None:
         """
         Initialize the ModuleFile context manager.
 
         Args:
-            package: The package where the resource file is located.
-            name: The name of the resource file.
-            mode: The mode to open the file. Accepts "text" or "t" for text
-                mode, and "binary" or "b" for binary mode. Defaults to "text".
+            path: Path to the data file in your module '{your_module_name}/data/file.csv'
+            mode: The file mode ("t" for text or "b" for binary).
 
-        Raises:
-            ValueError: If an invalid mode is provided.
         """
-        self.package = package
-        self.name = name
-
-        self.file: Optional[IO] = None
-
-        if self.expected_md5:
-            self.validate_md5(expected_md5)
+        self.path = Path(path)
+        self.mode = mode
 
     def __enter__(self) -> IO:
         """
@@ -63,11 +50,16 @@ class ModuleFile(ABC):
         Returns:
             A file-like object opened in the specified mode.
         """
+        package_name = self.path.parts[0]
+        filepath = Path(*self.path.parts[1:])
+        if self.mode == "t":
+            self._file = importlib.resources.open_text(package_name, filepath, encoding="utf-8")
 
-        self.file = self.open()
+        if self.mode == "b":
+            return importlib.resources.open_binary(package_name, filepath)
 
         if self._file is None:
-            raise FileNotFoundError()
+            raise FileNotFoundError('Either Module or Path is incorrect')
 
         return self._file
 
@@ -83,38 +75,3 @@ class ModuleFile(ABC):
         if self._file is not None:
             self._file.close()
 
-    @abstractmethod
-    def open(self):
-        pass
-
-    @abstractmethod
-    def validate_md5(self, expected_md5):
-        pass
-
-class ModuleTextFile(ModuleFile):
-    def open(self, **kwargs):
-        return importlib.resources.open_text(
-                self.package, path, encoding="utf-8", **kwargs
-            )
-
-    def open_as_binary(self):
-        return importlib.resources.open_binary(
-                package, path
-            )
-
-    def validate_md5(self, expected_md5):
-        with self.open_as_binary() as f:
-            if MD5Checker(file) != self.expected_md5:
-                raise RuntimeError("")
-
-
-class ModuleBinaryFile(ModuleFile):
-    def open(self):
-        return importlib.resources.open_binary(
-                package, path
-            )
-
-    def validate_md5(self, expected_md5):
-        with self as f:
-            if MD5Checker(file) != self.expected_md5:
-                raise RuntimeError("")
