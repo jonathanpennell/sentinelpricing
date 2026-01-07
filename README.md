@@ -57,7 +57,7 @@ Sentinel is available on PyPi, albeit with a slightly different name:
 
 `$ python -m pip install sentinelpricing`
 
-Sentinel officially supports Python 3.8+.
+Sentinel officially supports Python 3.11+.
 
 ## Features
 
