@@ -156,8 +156,7 @@ class Framework(abc.ABC):
         """
         pass
 
-    @classmethod
-    def quote_many(cls, tests: List[Any], *args: Any, **kwargs: Any) -> Any:
+    def quote_many(self, tests: List[Any], *args: Any, **kwargs: Any) -> Any:
         """
         Calculate multiple quotes using the framework.
 
@@ -173,19 +172,14 @@ class Framework(abc.ABC):
         Returns:
             A Quoteset containing the calculated quotes.
         """
-        instance = cls()
         quote_set = QuoteSet(
-            [
-                instance._calculate_wrapper(test, *args, **kwargs)
-                for test in tests
-            ],
-            framework=cls,
+            [self._calculate_wrapper(test, *args, **kwargs) for test in tests],
+            framework=type(self).__name__,
         )
 
         return quote_set
 
-    @classmethod
-    def quote(cls, test: Any, *args: Any, **kwargs: Any) -> Any:
+    def quote(self, test: Any, *args: Any, **kwargs: Any) -> Any:
         """
         Calculate a single quote using the framework.
 
@@ -200,5 +194,4 @@ class Framework(abc.ABC):
         Returns:
             The calculated quote.
         """
-        instance = cls()
-        return instance._calculate_wrapper(test, *args, **kwargs)
+        return self._calculate_wrapper(test, *args, **kwargs)

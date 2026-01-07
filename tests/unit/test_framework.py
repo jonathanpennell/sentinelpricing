@@ -52,8 +52,10 @@ def test_framework_quote():
         "Motor", (Framework,), {"setup": lambda x: x, "calculation": calculate}
     )
 
-    over_20 = Motor.quote({"age": 21})
-    under_20 = Motor.quote({"age": 19})
+    motor = Motor()
+
+    over_20 = motor.quote({"age": 21})
+    under_20 = motor.quote({"age": 19})
 
     assert isinstance(over_20, Quote)
     assert isinstance(under_20, Quote)

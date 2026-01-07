@@ -28,7 +28,7 @@ def test_testcase_quote():
 
     testcase = TestCase({"age": 100})
 
-    for framework in A, B, C:
+    for framework in A(), B(), C():
         testcase.quote(framework)
 
     assert len(testcase.quotes) == 3

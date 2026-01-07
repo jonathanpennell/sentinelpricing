@@ -466,9 +466,9 @@ class QuoteSet:
             QuoteSet: A new QuoteSet containing quotes from both sets.
         """
 
-        otherids = {q.id for q in other.quotes}
+        other_ids = {q.id for q in other.quotes}
 
-        return QuoteSet(list(filter(lambda q: q.id in otherids, self.quotes)))
+        return QuoteSet(list(filter(lambda q: q.id in other_ids, self.quotes)))
 
     def __contains__(self, other):
         if isinstance(other, Quote):

@@ -35,10 +35,6 @@ class TestCase:
         return other in self.data
 
     def quote(self, framework, *args, **kwargs):
-        if not isinstance(framework, type):
-            raise ValueError(
-                "Framework Instance received, expected definition."
-            )
         quote = framework.quote(self, *args, **kwargs)
         self.quotes.append(quote)
         return quote
