@@ -9,7 +9,7 @@ requires = ["setuptools>=61.0"]
 
 [project]
 name = "sentinelpricing"
-version = "0.1.0"
+version = "0.1.2"
 description = "Sentinel Pricing Framework"
 readme = "README.md"
 authors = [
