@@ -18,14 +18,14 @@ class Motor(Framework):
 
     def load_rating_file(self, path):
         with open(path) as f:
-	    reader = csv.DictReader(f)
-	    table = LookupTable(reader, name=path)
+	    	reader = csv.DictReader(f)
+	    	table = LookupTable(reader, name=path)
         return table
 
     def set_up(self):
     	"""Load rating tables into the framework"""
-        self.age = load_rating_file("age_rates.csv")        
-	self.lic = load_rating_file("lic_rates.csv")
+		self.age = load_rating_file("age_rates.csv")        
+		self.lic = load_rating_file("lic_rates.csv")
 
     def calculation(self, quote):
         """Quote Calculation"""
@@ -42,7 +42,7 @@ class Motor(Framework):
         return quote
 
 # Returns a Quote object from the Motor Framework.
-Motor.quote(
+Motor().quote(
 	{"age": 34, "lic": 7}
 )
 ```
