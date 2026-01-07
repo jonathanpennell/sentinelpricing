@@ -24,14 +24,14 @@ jobs:
       - name: Upgrade pip and install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install tox
+          pip install pytest pytest-cov
 
       - name: Run tests with tox for Python ${{ matrix.python-version }}
         # Option 1: If your tox environments are named to match the python version (e.g., py38, py39)
         # run: tox -e py${{ matrix.python-version }}  # Adjust accordingly if your env names differ
 
         # Option 2: Let tox auto-detect the available interpreter and skip missing ones.
-        run: tox --skip-missing-interpreters
+        run: pytest --cov=sentinelpricing --cov-report=term-missing tests/
 
   deploy:
     needs: test
