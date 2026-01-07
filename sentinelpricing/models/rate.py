@@ -1,3 +1,7 @@
+"""Rate"""
+
+
+# TODO: What if step was initialized here?
 class Rate:
     """Rate
 
@@ -9,7 +13,10 @@ class Rate:
 
     """
 
-    def __init__(self, name: str, value):
+    name: str
+    value: int | float
+
+    def __init__(self, name: str, value: int | float):
         self.name = name
         self.value = value
 
@@ -17,6 +24,9 @@ class Rate:
         if isinstance(other, Rate):
             return self.value + other.value
         return self.value + other
+
+    def __radd__(self, other):
+        return self + other
 
     def __sub__(self, other):
         if isinstance(other, Rate):

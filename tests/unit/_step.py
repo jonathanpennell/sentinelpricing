@@ -4,5 +4,5 @@ from sentinelpricing import Step
 
 
 def test_step_init():
-    s = Step("age", operator.add, 100, 100)
+    s = Step(100, operator.add, 100, "CONST")
     assert isinstance(s, Step)

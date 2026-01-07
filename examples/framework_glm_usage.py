@@ -1,4 +1,3 @@
-
 from sentinelpricing import Framework, LookupTable
 
 # Rates are for illustrative purposes only...
@@ -31,10 +30,11 @@ base_rates = [
     {"month": 12, "rate": 10},
 ]
 
+
 class TravelGoldV1(Framework):
     def setup(self):
 
-        with open('models/sale_prediction_model.pkl', 'rb') as f:
+        with open("models/sale_prediction_model.pkl", "rb") as f:
             loaded_model = pickle.load(f)
 
         self.sales_prediction = loaded_model
@@ -42,14 +42,14 @@ class TravelGoldV1(Framework):
         self.group_rate = LookupTable(group_rates)
 
     def calculation(self, quote):
-        quote += self.base_rate(quote['month'])
-        quote *= self.group_rate(quote['group'])
-        quote *= self.region_rate(quote['region'])
+        quote += self.base_rate(quote["month"])
+        quote *= self.group_rate(quote["group"])
+        quote *= self.region_rate(quote["region"])
 
         model_parameters = [
-            quote['month'],
-            quote['group'],
-            quote['region'],
+            quote["month"],
+            quote["group"],
+            quote["region"],
         ]
 
         if self.sales_prediction.predict(model_parameters) < 0.6:

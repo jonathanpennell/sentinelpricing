@@ -38,56 +38,44 @@ def test_quoteset_add():
     assert "lic" not in combined[0]
     assert "lic" in combined[5]
 
+
 def test_quoteset_max():
-    quotes = [
-        Quote(
-            {"age": i + 17, "lic": i + 17},
-            final_price = i * 5
-        )
-        for i in range(25)
-    ]
+    quotes = [Quote({"age": i + 17, "lic": i + 17, "i": i}) for i in range(25)]
+
+    quotes = [q + (q["i"] * 5) for q in quotes]
 
     qs = QuoteSet(quotes)
 
     assert qs.max() == 24 * 5
 
+
 def test_quoteset_max_by():
-    quotes = [
-        Quote(
-            {"age": i + 17, "lic": i + 17},
-            final_price = i * 5
-        )
-        for i in range(25)
-    ]
+    quotes = [Quote({"age": i + 17, "lic": i + 17, "i": i}) for i in range(25)]
+
+    quotes = [q + (q["i"] * 5) for q in quotes]
 
     qs = QuoteSet(quotes)
 
-    assert qs.max(by="age") == {k+17: k * 5 for k in range(25)}
+    assert qs.max(by="age") == {k + 17: k * 5 for k in range(25)}
+
 
 def test_quoteset_max_where():
-    quotes = [
-        Quote(
-            {"age": i + 17, "lic": i + 17},
-            final_price = i * 5
-        )
-        for i in range(25)
-    ]
+    quotes = [Quote({"age": i + 17, "lic": i + 17, "i": i}) for i in range(25)]
+
+    quotes = [q + (q["i"] * 5) for q in quotes]
 
     qs = QuoteSet(quotes)
-    max_where = qs.max(where=lambda x: x['age'] < 25)
+    max_where = qs.max(where=lambda x: x["age"] < 25)
     expected = 5 * (24 - 17)
     assert max_where == expected
 
+
 def test_quoteset_max_by_where():
-    quotes = [
-        Quote(
-            {"age": i + 17, "lic": i + 17},
-            final_price = i * 5
-        )
-        for i in range(25)
-    ]
+    quotes = [Quote({"age": i + 17, "lic": i + 17, "i": i}) for i in range(25)]
+
+    quotes = [q + (q["i"] * 5) for q in quotes]
 
     qs = QuoteSet(quotes)
-    max_where = qs.max(by="age", where=lambda x: x['age'] < 20)
-    expected = {k+17: k * 5 for k in range(0, 20 - 17)}
+    max_where = qs.max(by="age", where=lambda x: x["age"] < 20)
+    expected = {k + 17: k * 5 for k in range(0, 20 - 17)}
     assert max_where == expected

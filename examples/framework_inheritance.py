@@ -33,7 +33,9 @@ class MotorV1(Framework):
           if so, it adds the over_50_rate.
         - Returns the modified quote.
     """
+
     name = "MotorV1"
+
     def setup(self):
         self.base_rate = 100
         self.over_50_rate = 50
@@ -51,8 +53,9 @@ class MotorV2(MotorV1):
     - Updates the base_rate to 110 while keeping the over_50_rate
         unchanged.
     """
+
     name = "MotorV2"
-    
+
     def setup(self):
         self.base_rate = 110
         self.over_50_rate = 50

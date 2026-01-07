@@ -1,15 +1,14 @@
-from .models import Breakdown
-from .models import Framework
-from .models import LookupTable
-from .models import Note
-from .models import PriceTest
-from .models import Quote
-from .models import QuoteSet
-from .models import Rate
-from .models import ModuleTextFile, ModuleBinaryFile
-from .models import Step
-from .models import TestCase
-from .models import TestSuite
+from sentinelpricing.models import Breakdown
+from sentinelpricing.models import Framework
+from sentinelpricing.models import LookupTable
+from sentinelpricing.models import Note
+from sentinelpricing.models import PriceTest
+from sentinelpricing.models import Quote
+from sentinelpricing.models import QuoteSet
+from sentinelpricing.models import Rate
+from sentinelpricing.models import DataFile
+from sentinelpricing.models import TestCase
+from sentinelpricing.models import TestSuite
 
 __all__ = [
     "Breakdown",
@@ -20,9 +19,7 @@ __all__ = [
     "Quote",
     "QuoteSet",
     "Rate",
-    "ModuleTextFile",
-    "ModuleBinaryFile",
-    "Step",
+    "DataFile",
     "TestCase",
     "TestSuite",
 ]

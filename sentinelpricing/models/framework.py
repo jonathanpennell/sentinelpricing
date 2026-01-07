@@ -1,10 +1,7 @@
 import abc
 from typing import Any, List, Callable, Union
 
-from .pricetest import PriceTest
-from .quote import Quote
-from .quoteset import QuoteSet
-from .lookuptable import LookupTable
+from .quote import Quote, QuoteSet
 
 
 class Framework(abc.ABC):
@@ -124,24 +121,8 @@ class Framework(abc.ABC):
             The result of the calculation, typically a Quote.
         """
         # Convert test to a Quote instance if it isn't one already.
-        q = test if isinstance(test, Quote) else Quote(test, self.__class__)
+        q = test if isinstance(test, Quote) else Quote(test)
         return self.calculation(q, *args, **kwargs)
-
-    def describe(self) -> None:
-        """
-        Print out details about the framework.
-
-        This method inspects the instance for any attributes that are instances
-        of LookupTable and prints them out. This can be useful for debugging
-        or simply understanding the configuration of the framework.
-        """
-        rating_tables = []
-        for attr_name in dir(self):
-            attr = getattr(self, attr_name)
-            if isinstance(attr, LookupTable):
-                rating_tables.append(attr)
-        print("Framework:", self)
-        print("Rating Tables:", rating_tables)
 
     @abc.abstractmethod
     def setup(self) -> None:
@@ -200,10 +181,6 @@ class Framework(abc.ABC):
             ],
             framework=cls,
         )
-
-        for v in instance.__dict__.values():
-            if isinstance(v, PriceTest):
-                quote_set.price_test = v
 
         return quote_set
 
