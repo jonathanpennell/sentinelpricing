@@ -51,11 +51,16 @@ class DataFile(ABC):
         filepath = Path(*self.path.parts[1:])
         if self.mode == "t":
             self._file = importlib.resources.open_text(
-                package_name, *filepath.parts, encoding="utf-8"
+                package_name,
+                *filepath.parts,
+                encoding="utf-8"
             )
 
         if self.mode == "b":
-            return importlib.resources.open_binary(package_name, *filepath.parts)
+            return importlib.resources.open_binary(
+                package_name,
+                *filepath.parts
+            )
 
         if self._file is None:
             raise FileNotFoundError("Either Module or Path is incorrect")
