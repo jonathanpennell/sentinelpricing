@@ -53,6 +53,9 @@ class PriceTest:
     def __getitem__(self, quote):
         return self.apply(quote)
 
+    def __call__(self, quote):
+        return self.apply(quote)
+
     def apply(self, quote):
 
         val = self.get(quote)

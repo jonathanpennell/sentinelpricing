@@ -1,8 +1,15 @@
-from operator import add
-from typing import List, Union, Iterator, Optional
+from typing import List, Union, Iterator, Any
 
-from .step import Step
-from .note import Note
+
+class InitialStep:
+    """The initial step of a breakdown."""
+
+    def __init__(self):
+        self.a = 0
+        self.b = 0
+        self.result = 0
+        self.oper = lambda: None
+        self.name = "ORIG"
 
 
 class Breakdown:
@@ -21,33 +28,20 @@ class Breakdown:
             the calculation process.
     """
 
-    def __init__(self, final_price: Optional[float] = None) -> None:
+    def __init__(self, parent_quote_id) -> None:
         """Initialize a Breakdown instance.
 
         If a final price is provided, a pre-calculated quote step is added;
         otherwise, an initial "Start" step is added with a result of 0.
 
         Args:
-            final_price (Optional[float]): The pre-calculated final price.
-                If provided, a step indicating a pre-calculated quote is
-                appended. Defaults to None.
+            parent_quote_id (int): The parent quote id of the breakdown.
         """
-        self.steps: List[Union["Step", "Note"]] = []
-        if final_price is not None:
-            self.append(
-                Step(
-                    name="Pre-Calculated Quote",
-                    oper=add,
-                    other=None,
-                    result=final_price,
-                )
-            )
-        else:
-            self.append(Step("New", None, None, 0))
+        self.steps: List = []
+        self.steps.append(InitialStep())
+        self.parent_quote_id = parent_quote_id
 
-    def __getitem__(
-        self, index: Union[int, slice]
-    ) -> Union["Step", "Note", List[Union["Step", "Note"]]]:
+    def __getitem__(self, index: Union[int, slice]) -> Any:
         """Retrieve one or more steps from the breakdown by index.
 
         Args: index (int or slice): The index (or slice of indices) of the
@@ -66,7 +60,7 @@ class Breakdown:
         """
         return len(self.steps)
 
-    def __iter__(self) -> Iterator[Union["Step", "Note"]]:
+    def __iter__(self) -> Iterator:
         """Return an iterator over the steps in the breakdown.
 
         Returns:
@@ -74,7 +68,7 @@ class Breakdown:
         """
         return iter(self.steps)
 
-    def __reversed__(self) -> Iterator[Union["Step", "Note"]]:
+    def __reversed__(self) -> Iterator:
         """
         Return a reverse iterator over the steps in the breakdown.
 
@@ -89,7 +83,7 @@ class Breakdown:
         Returns:
             str: A summary of all steps in the breakdown.
         """
-        return repr(type(self)) + "\n" + self.summary()
+        return "Breakdown({})".format(self.parent_quote_id)
 
     def __bool__(self) -> bool:
         """Determine the truth value of the Breakdown.
@@ -106,14 +100,13 @@ class Breakdown:
             recorded step.
         """
         steps = list(self)
-        steps.insert(0, Step.headers())
         return "\n".join(repr(step) for step in steps)
 
-    def append(self, step: Union["Step", "Note"]) -> None:
+    def append(self, step) -> None:
         """Append a new step to the breakdown.
 
         Args:
-            step (Step): The step to append.
+            step: The new step to add to the breakdown.
         """
         self.steps.append(step)
 
@@ -133,8 +126,6 @@ class Breakdown:
         """
         for step in reversed(self):
             # Skip any steps that are purely notes.
-            if isinstance(step, Note):
-                continue
-            if isinstance(step, Step):
+            if hasattr(step, "result"):
                 return step.result
         raise ValueError("No calculations present in quote.")

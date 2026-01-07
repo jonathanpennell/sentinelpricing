@@ -1,19 +1,29 @@
 """Quote"""
 
 import uuid
+from collections import Counter
+from statistics import mean
 from operator import add, sub, mul, truediv
-from typing import Any, Mapping, Optional, Union, Callable, Hashable, Type
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Hashable,
+    Iterable,
+    Iterator,
+    List,
+    Mapping,
+    Optional,
+    Union,
+    Tuple,
+)
 
-from .breakdown import Breakdown
-from .rate import Rate
-from .step import Step
-from .note import Note
-from .testcase import TestCase
-
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from .framework import Framework
+from sentinelpricing.models.breakdown import Breakdown
+from sentinelpricing.models.testcase import TestCase
+from sentinelpricing.models.transformation import Transformation
+from sentinelpricing.models.note import Note
+from sentinelpricing.models.override import Override
+from sentinelpricing.utils.calculations import percentage, dict_difference
 
 
 class Quote:
@@ -28,7 +38,7 @@ class Quote:
     subscript notation.
 
     Attributes:
-        identifier (uuid.UUID): Unique identifier for the quote.
+        id (uuid.UUID): Unique id for the quote.
         framework: Optional framework instance associated with the quote.
         quotedata (Mapping[str, Any]): Test case data used for quote
             calculation.
@@ -38,10 +48,7 @@ class Quote:
 
     def __init__(
         self,
-        testcase: Union[Mapping, "TestCase"],
-        framework: Optional[Type["Framework"]] = None,
-        final_price: Optional[float] = None,
-        identifier: Optional[Any] = None,
+        testcase: Mapping,
     ) -> None:
         """
         Initialize a new Quote instance.
@@ -50,15 +57,7 @@ class Quote:
             testcase (Mapping or TestCase): The test case data or a TestCase
                 instance. If a TestCase is provided, its `quotedata` attribute
                 will be used.
-            framework (Optional[Framework]): instance associated with this
-                quote.
-            final_price (Optional[float]): A pre-calculated final price. If
-                provided, the breakdown will start with this value.
-            identifier (Optional[Any]): An optional unique identifier for the
-                quote. If not provided, a new UUID will be generated.
         """
-        self.identifier = identifier or uuid.uuid4()
-        self.framework = framework or "Unnamed Framework"
 
         if isinstance(testcase, TestCase):
             self.quotedata = testcase.data
@@ -69,21 +68,19 @@ class Quote:
                 "testcase must be a Mapping or a TestCase instance."
             )
 
-        self.breakdown = (
-            Breakdown(final_price) if final_price is not None else Breakdown()
-        )
+        self.id = uuid.uuid4()
+
+        self.breakdown = Breakdown(self.id)
 
     def __repr__(self) -> str:
         """
-        Return a string representation of the Quote, including its identifier
+        Return a string representation of the Quote, including its id
         and breakdown.
 
         Returns:
             str: A string representation of the quote.
         """
-        return "{}::{}::{}".format(
-            self.__class__.__name__, self.identifier, repr(self.framework)
-        )
+        return "{}({})".format(self.__class__.__name__, self.id)
 
     def __getitem__(self, key: Hashable) -> Any:
         """
@@ -250,9 +247,7 @@ class Quote:
             return self.breakdown.final_price < other.breakdown.final_price
         if isinstance(other, (int, float)):
             return self.breakdown.final_price < other
-        raise NotImplementedError(
-            "Less Than Comparison is only supported for Quote, int or floats."
-        )
+        return NotImplemented
 
     def __gt__(self, other: Any) -> bool:
         """
@@ -338,17 +333,13 @@ class Quote:
         Returns:
             Quote: The modified Quote instance.
         """
-        if isinstance(other, Rate):
-            name = other.name
-            other_value = other.value
-        else:
-            name = "CONST"
-            other_value = other
-
-        result = oper(self.breakdown.final_price, other_value)
-        step = Step(name, oper, other_value, result)
-        self.breakdown.append(step)
+        t = Transformation(oper, self.final_price, other)
+        self.breakdown.append(t)
         return self
+
+    def override(self, value):
+        overriding_step = Override(value)
+        self.breakdown.append(overriding_step)
 
     def note(self, text: str) -> None:
         """
@@ -361,13 +352,6 @@ class Quote:
 
     def get(self, *args, **kwargs):
         return self.quotedata.get(*args, **kwargs)
-
-    def override(self, /, final_price, message=None):
-
-        overriding_step = Step(
-            f"OVERRIDE - {message}", "assignment", final_price, final_price
-        )
-        self.breakdown.append(overriding_step)
 
     @property
     def calculated(self) -> bool:
@@ -398,3 +382,449 @@ class Quote:
             str: Quote Breakdown.
         """
         return repr(self) + "\n" + repr(self.breakdown)
+
+
+class PreCalculatedQuote(Quote):
+    def __init__(self, breakdown, testcase, quoteid=None):
+        self.breakdown = Breakdown.from_iterable(breakdown)
+
+        if quoteid is not None:
+            self.id = quoteid
+
+        super().__init__(testcase)
+
+
+class QuoteSet:
+    """
+    A collection of Quote objects.
+
+    A QuoteSet is generated after running either a TestSuite or TestCase
+    through a Framework. It supports aggregation, statistical operations, and
+    grouping of quotes.
+    """
+
+    def __init__(
+        self, quotes: Iterable["Quote"], framework: Optional[Any] = None
+    ) -> None:
+        """
+        Initialize a QuoteSet instance.
+
+        Args:
+            quotes (Iterable[Quote]): An iterable of Quote objects.
+            framework: Optional framework associated with these quotes.
+        """
+        self.quotes: List["Quote"] = list(quotes)
+        self.uniqueid_check()
+
+    def __iter__(self) -> Iterator["Quote"]:
+        """
+        Return an iterator over the Quote objects in the list.
+
+        Returns:
+            Iterator[Quote]: An iterator over the quotes.
+        """
+        return iter(self.quotes)
+
+    def __getitem__(self, index) -> Quote:
+        """
+        Get item from the Quote objects in the quotes list.
+
+        Returns:
+            Quote: An instance of a Quote.
+        """
+        return self.quotes[index]
+
+    def __len__(self) -> int:
+        """
+        Return the number of Quote objects in the set.
+
+        Returns:
+            int: The count of quotes.
+        """
+        return len(self.quotes)
+
+    def __add__(self, other: "QuoteSet") -> "QuoteSet":
+        """
+        Combine two QuoteSets.
+
+        Args:
+            other (QuoteSet): Another QuoteSet to add.
+
+        Returns:
+            QuoteSet: A new QuoteSet containing quotes from both sets.
+        """
+        return QuoteSet(self.quotes + other.quotes)
+
+    def __sub__(self, other: "QuoteSet") -> "QuoteSet":
+        """
+        Subtract One QuoteSet From the Other QuoteSet.
+
+        Args:
+            other (QuoteSet): Another QuoteSet to subtract.
+
+        Returns:
+            QuoteSet: A new QuoteSet containing quotes from both sets.
+        """
+
+        otherids = {q.id for q in other.quotes}
+
+        return QuoteSet(list(filter(lambda q: q.id in otherids, self.quotes)))
+
+    def __contains__(self, other):
+        if isinstance(other, Quote):
+            # Should this be comparing quotedata or id?
+            return any(other.quotedata == q.quotedata for q in self)
+        if isinstance(other, dict):
+            return any(other == q.quotedata for q in self)
+        return NotImplemented
+
+    def _groupby(
+        self,
+        quotes: Union[None, List[Quote]] = None,
+        by: Optional[Union[Any, Callable[[Quote], Any]]] = None,
+    ) -> Dict[Any, List["Quote"]]:
+        """
+        Group quotes by a specified key or set of keys.
+
+        Args:
+            by (Any or Iterable[Any], optional): The key(s) used for grouping.
+                If an iterable is provided (and not a string/bytes), the keys
+                are combined into a tuple.
+
+        Returns:
+            Dict[Any, List[Quote]]: A mapping from group key to list of Quote
+                objects.
+        """
+
+        groups: Dict[Any, List["Quote"]] = {}
+        iterable = quotes or self.quotes
+
+        _by: Union[Tuple[Any, ...], Callable, str]
+        if callable(by):
+            _by = by
+        else:
+            if isinstance(by, Iterable) and not isinstance(by, str):
+
+                def _by(x):
+                    return x[tuple(by)]
+
+            else:
+
+                def _by(x):
+                    return x[by]
+
+        for q in iterable:
+            key: Any = _by(q)
+            groups.setdefault(key, []).append(q)
+        return groups
+
+    def _statistic_function(
+        self,
+        func: Callable[[Iterable[Any]], Any],
+        by: Optional[Union[Any, Iterable[Any]]] = None,
+        on: Optional[str] = None,
+        where: Optional[Callable[["Quote"], bool]] = None,
+        sort_keys: bool = True,
+    ) -> Union[Dict[Any, Any], Any]:
+        """
+        Apply an aggregation function to the quotes or to groups of quotes.
+
+        Args:
+            func (Callable): A function that aggregates a list of numeric
+                values (e.g., mean, max).
+            by (Any or Iterable[Any], optional): Key(s) to group quotes before
+                applying the function.
+            bin (Callable): A function that groups the by field.
+            on (str, optional): The attribute name to extract from each Quote
+                (defaults to "final_price").
+            where (Callable, optional): A function to filter quotes
+                before aggregation.
+            sort_keys (bool): Whether to sort the grouping keys in the result.
+
+        Returns:
+            Union[Dict[Any, Any], Any]:
+                If no grouping is specified, returns the aggregated value for
+                    all quotes.
+                If grouping is specified, returns a dictionary mapping group
+                    keys to aggregated values.
+        """
+        attribute: str = on or "final_price"
+
+        filtered_quotes = (
+            list(filter(where, self.quotes)) if where else self.quotes
+        )
+
+        if by is None:
+            values = [getattr(q, attribute) for q in filtered_quotes]
+            return func(values)
+
+        grouped_data = self._groupby(quotes=filtered_quotes, by=by)
+        prelim: Dict[Any, List[Any]] = {
+            key: [getattr(q, attribute) for q in quotes]
+            for key, quotes in grouped_data.items()
+        }
+
+        if sort_keys:
+            prelim = {key: prelim[key] for key in sorted(prelim.keys())}
+
+        return {key: func(values) for key, values in prelim.items()}
+
+    def avg(self, *args, **kwargs) -> Union[Dict[Any, float], float]:
+        """
+        Compute the average of a specified attribute across quotes.
+
+        Args:
+            by (Any or Iterable[Any], optional): Key(s) or Callable to group
+                quotes by.
+            on (str, optional): The attribute name to extract from each Quote
+                (defaults to "final_price").
+            where (Callable, optional): A function to filter quotes
+                before aggregation.
+            sort_keys (bool): Whether to sort the grouping keys in the result.
+
+        Returns:
+            Union[Dict[Any, float], float]:
+                - A single average value if no grouping is specified.
+                - A dictionary mapping group keys to their average values if
+                    grouping is used.
+        """
+        return self._statistic_function(mean, *args, **kwargs)
+
+    def max(self, *args, **kwargs) -> Union[Dict[Any, float], float]:
+        """
+        Compute the maximum of a specified attribute across quotes.
+
+        Args:
+            by (Any or Iterable[Any],Key(s) or Callable to group
+                quotes by.
+            on (str, optional): The attribute name to extract from each Quote
+                (defaults to "final_price").
+            where (Callable, optional): A function to filter quotes
+                before aggregation.
+            sort_keys (bool): Whether to sort the grouping keys in the result.
+
+        Returns:
+            Union[Dict[Any, float], float]:
+                - A single maximum value if no grouping is specified.
+                - A dictionary mapping group keys to their maximum values if
+                    grouping is used.
+        """
+        return self._statistic_function(max, *args, **kwargs)
+
+    def min(self, *args, **kwargs) -> Union[Dict[Any, float], float]:
+        """
+        Compute the minimum of a specified attribute across quotes.
+
+        Args:
+            by (Any or Iterable[Any], optional): Key(s) or Callable to group
+                quotes by.
+            on (str, optional): The attribute name to extract from each Quote
+                (defaults to "final_price").
+            where (Callable, optional): A function to filter quotes
+                before aggregation.
+            sort_keys (bool): Whether to sort the grouping keys in the result.
+
+        Returns:
+            Union[Dict[Any, float], float]:
+                - A single minimum value if no grouping is specified.
+                - A dictionary mapping group keys to their minimum values if
+                    grouping is used.
+        """
+        return self._statistic_function(min, *args, **kwargs)
+
+    def sum(self, *args, **kwargs) -> Union[Dict[Any, float], float]:
+        """
+        Compute the sum of a specified attribute across quotes.
+
+        Args:
+            by (Any or Iterable[Any], optional): Key(s) or Callable to group
+                quotes by.
+            on (str, optional): The attribute name to extract from each Quote
+                (defaults to "final_price").
+            where (Callable, optional): A function to filter quotes
+                before aggregation.
+            sort_keys (bool): Whether to sort the grouping keys in the result.
+
+        Returns:
+            Union[Dict[Any, float], float]:
+                - A single sum if no grouping is specified.
+                - A dictionary mapping group keys to their sums if grouping is
+                    used.
+        """
+        return self._statistic_function(sum, *args, **kwargs)
+
+    def apply(
+        self,
+        func: Callable[[Iterable[Any]], Any],
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[Dict[Any, Any], Any]:
+        """
+        Apply a custom aggregation function to the quotes.
+
+        Args:
+            func (Callable): A function that aggregates a list of values.
+            *args: Additional positional arguments for the function.
+            by (Any or Iterable[Any], optional): Key(s) or Callable to group
+                quotes by.
+            on (str, optional): The attribute name to extract from each Quote
+                (defaults to "final_price").
+            where (Callable, optional): A function to filter quotes
+                before aggregation.
+            sort_keys (bool): Whether to sort the grouping keys in the result.
+
+        Returns:
+            Union[Dict[Any, Any], Any]:
+                - The aggregated value if no grouping is specified.
+                - A dictionary mapping group keys to their aggregated values if
+                    grouping is used.
+        """
+        return self._statistic_function(func, *args, **kwargs)
+
+    def mix(
+        self,
+        by: Optional[Union[Any, Iterable[Any]]] = None,
+        percent: bool = False,
+        **kwargs: Any,
+    ) -> Dict[Any, Union[int, float]]:
+        """
+        Get a mapping of factors present in the quotes along with their
+        frequency.
+
+        Args:
+            by (Any or Iterable[Any], optional): Key(s) to group quotes.
+            percent (bool): If True, returns the percentage representation of
+                 each group.
+            **kwargs: Additional keyword arguments to pass to the percentage
+                function.
+
+        Returns:
+            Dict[Any, Union[int, float]]: A dictionary mapping each group key
+                to its count or percentage.
+        """
+        grouped = self._groupby(by=by)
+        if percent:
+            return {
+                k: percentage(len(v), len(self), **kwargs)
+                for k, v in grouped.items()
+            }
+        return {k: len(v) for k, v in grouped.items()}
+
+    def difference_in_mix(
+        self,
+        other: "QuoteSet",
+        by: Optional[Union[Any, Iterable[Any]]] = None,
+        percent: bool = False,
+    ) -> Dict[Any, float]:
+        """
+        Calculate the difference in mix between this QuoteSet and another.
+
+        Args:
+            other (QuoteSet): Another QuoteSet to compare.
+            by (Any or Iterable[Any], optional): Key(s) to group quotes before
+                comparing.
+            percent (bool): If True, computes differences in percentage terms.
+
+        Returns:
+            Dict[Any, float]: A dictionary mapping group keys to the difference
+                in mix.
+
+        Raises:
+            NotImplementedError: If `other` is not a QuoteSet.
+        """
+        if not isinstance(other, QuoteSet):
+            raise NotImplementedError(
+                "Difference only implemented for QuoteSet"
+            )
+        return dict_difference(
+            self.mix(by=by, percent=percent), other.mix(by=by, percent=percent)
+        )
+
+    def difference(
+        self,
+        other: "QuoteSet",
+        func: Callable[[Iterable[Any]], Any],
+        by: Optional[Union[Any, Iterable[Any]]] = None,
+    ) -> Dict[Any, Any]:
+        """
+        Calculate the difference between aggregated values of this QuoteSet and
+            another.
+
+        Args:
+            other (QuoteSet): Another QuoteSet to compare.
+            func (Callable): An aggregation function to apply.
+            by (Any or Iterable[Any], optional): Key(s) to group quotes before
+                applying the function.
+
+        Returns:
+            Dict[Any, Any]: A dictionary mapping group keys to the difference
+                in aggregated values.
+
+        Raises:
+            NotImplementedError: If `other` is not a QuoteSet.
+        """
+        if not isinstance(other, QuoteSet):
+            raise NotImplementedError(
+                "Difference only implemented for QuoteSet"
+            )
+        return dict_difference(
+            self.apply(func, by=by), other.apply(func, by=by)
+        )
+
+    def factors(self, keys: Optional[Iterable[str]] = None) -> Dict[str, set]:
+        """
+        Retrieve unique sets of factors present in the quote data.
+
+        Args:
+            keys (Iterable[str], optional): Specific factor keys to include.
+                If not provided, all keys from each quote's data are
+                considered.
+
+        Returns:
+            Dict[str, set]: A dictionary mapping each factor to a set of its
+                unique values.
+        """
+        factor_dict: Dict[str, set] = {}
+        for quote in self:
+            for key, value in quote.quotedata.items():
+                if keys is not None and key not in keys:
+                    continue
+                factor_dict.setdefault(key, set()).add(value)
+        return factor_dict
+
+    def subset(
+        self, by: Union[Callable[["Quote"], bool], Dict[Any, Any]]
+    ) -> "QuoteSet":
+        """
+        Retrieve a subset of quotes based on filtering criteria.
+
+        Args:
+            by (Callable or Dict): If callable, it is used to filter quotes via
+                filter(). If a dict is provided (deprecated), its keys refer to
+                factors in the quote and its values specify the desired
+                selection.
+
+        Returns:
+            QuoteSet: A new QuoteSet containing quotes that match the filtering
+                criteria.
+
+        Raises:
+            NotImplementedError: If dict-based filtering is attempted.
+        """
+        if callable(by):
+            return QuoteSet(filter(by, self))
+        raise NotImplementedError(
+            "Dict-based filtering is deprecated. Use a function instead."
+        )
+
+    def uniqueid_check(self) -> None:
+        """
+        Check for duplicate quote ids and warn if duplicates exist.
+
+        Prints a warning message if any Quote in the set has a non-unique
+            id.
+        """
+        ids = [q.id for q in self]
+        id_counts = Counter(ids)
+        if any(count > 1 for count in id_counts.values()):
+            print("Warning, non-unique IDs")
